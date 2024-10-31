@@ -6,6 +6,9 @@
 #include <windows.h>
 using namespace std;
 
+ //厲害喔！！！！！
+
+
 class MODEL
 {
    public:
