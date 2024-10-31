@@ -5,7 +5,7 @@
 #include <ctime>
 #include <windows.h>
 using namespace std;
-
+//meow meow
 class MODEL
 {
    public:
