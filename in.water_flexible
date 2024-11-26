@@ -1,0 +1,55 @@
+units real
+atom_style full
+
+# 定義模擬區域
+region box block -10 10 -10 10 -10 10
+create_box 2 box bond/types 1 angle/types 1 &
+            extra/bond/per/atom 2 extra/angle/per/atom 1 extra/special/per/atom 2
+
+# 定義質量
+mass 1 15.9994  # O 原子
+mass 2 1.008    # H 原子
+
+# Lennard-Jones 和 Coulomb 相互作用
+pair_style lj/cut/coul/long 8.0
+pair_coeff 1 1 0.1020 3.188  # O-O
+pair_coeff 2 2 0.0    1.0    # H-H
+pair_coeff 1 2 0.0    1.0    # O-H
+
+# 定義彈性鍵參數
+bond_style harmonic
+bond_coeff 1 450.0 0.9572  # OH 鍵：力常數 450 kcal/mol/Å²，平衡距離 0.9572 Å
+
+# 定義彈性角參數
+angle_style harmonic
+angle_coeff 1 55.0 104.52  # HOH 角：力常數 55 kcal/mol/rad²，平衡角 104.52 度
+
+# 定義分子 (檔案包含柔性鍵和角度)
+molecule water tip3p_flexible.mol
+
+# 隨機生成 50 顆水分子，避免重疊
+create_atoms 0 random 50 12345 NULL mol water 12345 overlap 1.33
+
+# Ewald 電場計算 (處理長程庫倫相互作用)
+kspace_style ewald 1.0e-4
+
+# 最小化能量
+minimize 1.0e-4 1.0e-6 1000 10000
+
+# 初始化時間積分
+reset_timestep 0
+timestep 1.0
+
+# 溫度控制 (NVT 模擬)
+velocity all create 298.15 34567 mom yes rot yes dist gaussian
+fix integrate all nvt temp 298.15 298.15 100.0
+
+# 輸出資訊
+thermo_style custom step temp press pe ke etotal
+thermo 1000
+
+# 模擬運行時間
+run 20000
+
+# 儲存結果
+write_data tip3p_flexible_nvt.data nocoeff
