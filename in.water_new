@@ -1,0 +1,51 @@
+variable temp index 298.0  # Temperature in Kelvin
+
+units real
+atom_style full
+# 讀取 data 文件
+
+
+# 計算總原子數
+variable total_atoms equal count(all)
+print "Total atoms loaded: ${total_atoms}"
+
+# 其他模擬設置...
+special_bonds lj/coul 0.0 0.0 0.5
+pair_style lj/cut/coul/long 8.0
+pair_modify mix arithmetic tail yes
+#kspace_style ewald 1.0e-4
+bond_style harmonic
+angle_style harmonic
+
+read_data init.data
+
+pair_coeff 1 1 0.1020 3.188
+pair_coeff 2 2 0.0 1.0
+pair_coeff 1 2 0.0 1.0
+bond_coeff 1 450.0 0.9572
+angle_coeff 1 55.0 104.52
+
+group water type 1 2
+neighbor 2.0 bin
+neigh_modify every 1 delay 1 check yes
+
+# 初始化速度
+velocity all create ${temp} 12345 mom yes rot yes dist gaussian
+timestep 0.25  # Adjust timestep for flexibility
+
+# Temperature control (NVT ensemble)
+fix integrate all nvt temp ${temp} ${temp} 100.0
+
+# Energy minimization
+#minimize 1.0e-4 1.0e-6 1000 10000
+
+# Output settings
+thermo_style custom step temp press pe ke etotal density atoms
+thermo 1000  # 每1000步输出一次
+
+# Simulation run
+run 0
+
+# Save data
+dump myDump all custom 1000 dump.atom id type x y z vx vy vz
+write_data tip3p_flexible_nvt.data nocoeff
