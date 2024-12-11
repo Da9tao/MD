@@ -1,0 +1,63 @@
+variable temp index 298.15  # Temperature in Kelvin
+
+units real
+atom_style full
+
+# 計算總原子數
+variable total_atoms equal count(all)
+print "Total atoms loaded: ${total_atoms}"
+
+# 其他模擬設置
+
+special_bonds lj/coul 0.0 0.0 0.5
+kspace_style ewald 1.0e-4           # 設定 Ewald 方法，收斂精度設為 1.0e-4
+pair_style lj/cut/coul/long 10.65960  # 適用於 Lennard-Jones 和 長程庫倫相互作用
+
+pair_modify mix arithmetic tail no       # 混合規則與尾部修正
+bond_style harmonic
+angle_style cosine/squared
+
+# 讀取 data 文件
+read_data init.data
+
+# 配置力場參數
+#pair_coeff 1 1 0.1020 3.188               # Lennard-Jones 參數 for O-O
+#pair_coeff 2 2 0.0 1.0                    # Lennard-Jones 參數 for H-H
+#pair_coeff 1 2 0.0 1.0                    # Lennard-Jones 參數 for O-H
+#bond_coeff 1 450.0 0.9572                 # 鍵長與鍵力常數
+#angle_coeff 1 55.0 104.52                 # 鍵角與鍵力常數
+
+pair_coeff 1 1 0.1848 3.165541325   # O-O interactions
+pair_coeff 2 2 0.01 0.8018088463        # H-H interactions
+#pair_coeff 1 2 0.0429 2.2266   # O-H interactions (Lorentz-Berthelot mixing rules)
+bond_coeff 1 500.0 1.0         # OH bond: k_b = 500 kcal/mol/Å², equilibrium length = 1.0 Å
+angle_coeff 1 67.5 109.47     # HOH angle: k_θ = 120 kcal/mol/rad², equilibrium angle = 109.47°
+
+
+
+# 設置分組
+group water type 1 2
+
+# 鄰近列表設置
+neighbor 2.0 bin
+neigh_modify every 1 delay 1 check yes
+
+# 初始化速度
+#velocity all create ${temp} 12345 mom yes rot yes dist gaussian
+timestep 1.0                           # 時間步長（飛秒）
+
+# 溫控（NVT）
+fix integrate all nvt temp ${temp} ${temp} 166
+
+# 輸出設置
+thermo_style custom step temp press pxx pyy pzz pxy pxz pyz pe ke etotal 
+#thermo_style custom step temp press pxx pyy pzz pxy pxz pyz pe ke etotal density atoms
+thermo 1000                               # 每 1000 步輸出
+
+dump myDump all custom 1000 dump.atom id type x y z vx vy vz
+
+# 實際模擬運行
+run 10000000
+
+# 保存數據與輸出速度
+write_data tip3p_flexible_nvt.data nocoeff
